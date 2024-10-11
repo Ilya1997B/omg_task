@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
-import {WordCell} from "./WordCell";
 import {TheGame} from "./TheGame";
+import {createSprite} from "../utils/createSprite";
+import {images} from "./images";
 
 export class LetterCircle {
     private letters: string[];
@@ -10,7 +11,6 @@ export class LetterCircle {
     private foundWords: string[] = [];
     private validWords: string[];
     private previewText: PIXI.Text;
-    private wordCells: WordCell[] = [];
     private selectionLine: PIXI.Graphics;
     private currentPointerPosition: { x: number, y: number } = { x: 0, y: 0 };
 
@@ -19,7 +19,6 @@ export class LetterCircle {
         this.gameContainer = gameContainer;
         this.validWords = words.sort((a, b) => a.length - b.length); // Сортируем слова по длине
         this.setupLetters();
-        this.setupFoundWordsDisplay();
         this.previewText = new PIXI.Text('', { fontSize: 24, fill: 0xffffff });
         this.setupPreviewText();
         this.selectionLine = new PIXI.Graphics();
@@ -75,33 +74,37 @@ export class LetterCircle {
 
     private setupLetters() {
         const centerX = this.gameContainer.width / 2;
-        const centerY = 200;
-        const radius = 200;
+        const centerY = 250;
+        const radius = 120;
         const angleStep = (2 * Math.PI) / this.letters.length;
+
+        // Создаем графику для окружности
+        const circle = new PIXI.Graphics();
+        circle.lineStyle(20, 0x3E4A68); // Толщина и цвет линии
+        circle.drawCircle(centerX, centerY, radius);
+        this.gameContainer.addChild(circle);
 
         this.letters.forEach((letter, index) => {
             const angle = index * angleStep;
             const x = centerX + radius * Math.cos(angle);
             const y = centerY + radius * Math.sin(angle);
+            const cell = createSprite(images.ball);
 
-            const letterButton = new PIXI.Text(letter, { fontSize: 24, fill: 0xffffff });
+            const letterButton = new PIXI.Text(letter, { fontSize: 57, fill: 0x58595B });
             letterButton.interactive = true;
-            letterButton.x = x;
-            letterButton.y = y;
+            cell.x = x - cell.width / 2; // Центрируем ячейку по X
+            cell.y = y - cell.height / 2; // Центрируем ячейку по Y
+            letterButton.x = cell.width / 2 - letterButton.width / 2;
+            letterButton.y = cell.height / 2 - letterButton.height / 2 - 4;
 
             letterButton.on('pointerdown', () => this.startSelection(letterButton));
             letterButton.on('pointerover', () => this.continueSelection(letterButton));
 
-            this.gameContainer.addChild(letterButton);
+            cell.addChild(letterButton);
+            this.gameContainer.addChild(cell);
         });
     }
 
-    private setupFoundWordsDisplay() {
-        const foundWordsText = new PIXI.Text('Found Words:', { fontSize: 18, fill: 0xffffff });
-        foundWordsText.x = -200;
-        foundWordsText.y = -300;
-        this.gameContainer.addChild(foundWordsText);
-    }
 
     private setupPreviewText() {
         // this.previewText.x = 200;
@@ -109,10 +112,6 @@ export class LetterCircle {
         this.gameContainer.addChild(this.previewText);
     }
 
-    private updateFoundWordsDisplay() {
-        const foundWordsText = this.gameContainer.children.find(child => child instanceof PIXI.Text && child.text.startsWith('Found Words:')) as PIXI.Text;
-        foundWordsText.text = `Found Words: ${this.foundWords.join(', ')}`;
-    }
 
     private updatePreviewText() {
         const selectedWord = this.selectedLetters.map(letter => letter.text).join('');
@@ -155,7 +154,6 @@ export class LetterCircle {
         if (this.isValidWord(selectedWord)) {
             console.log(`Valid word: ${selectedWord}`);
             this.foundWords.push(selectedWord);
-            this.updateFoundWordsDisplay();
             this.selectedLetters.forEach(letter => letter.style.fill = 0x00ff00); // Изменяем цвет на зеленый для правильного слова
 
             // Обновляем ячейки слова
@@ -163,13 +161,13 @@ export class LetterCircle {
 
             // Возвращаем цвет обратно через некоторое время
             setTimeout(() => {
-                this.selectedLetters.forEach(letter => letter.style.fill = 0xffffff); // Возвращаем цвет обратно
+                this.selectedLetters.forEach(letter => letter.style.fill = 0x58595B); // Возвращаем цвет обратно
                 this.selectedLetters = [];
                 this.updateSelectionLine();
             }, 1000); // 1 секунда задержки
         } else {
             console.log(`Invalid word: ${selectedWord}`);
-            this.selectedLetters.forEach(letter => letter.style.fill = 0xffffff); // Возвращаем цвет обратно
+            this.selectedLetters.forEach(letter => letter.style.fill = 0x58595B); // Возвращаем цвет обратно
             this.selectedLetters = [];
             this.updateSelectionLine();
         }
